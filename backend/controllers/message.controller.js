@@ -1,6 +1,7 @@
 import { catchAsyncError } from '../middlewares/catchAsyncError.js';
 import Conversation from '../models/conversation.model.js';
 import Message from '../models/message.model.js';
+import { getReceiverSocketId, io } from '../socket/socket.js';
 
 export const sendMessage = catchAsyncError(async(req, res, next) => {
     try {
@@ -32,6 +33,13 @@ export const sendMessage = catchAsyncError(async(req, res, next) => {
         // await newMessage.save();
         //This will learn in parallel
         await Promise.all([ conversation.save(), newMessage.save()])
+
+        //socket.io functionality
+        const receiverSocketId = getReceiverSocketId(receiverId);
+        if(receiverSocketId) {
+            io.to(receiverSocketId).emit("newMessage", newMessage);
+        }
+
         res.status(200).json(newMessage);
 
     } catch (error) {
